@@ -1,6 +1,6 @@
 from time import sleep
 import send_email
-import dianna_email
+import python.dianna_email as dianna_email
 import miranda_email
 import time
 from requests import session
@@ -30,13 +30,9 @@ while True:
     measure_price_p100 = float(measure_price) + 100
     if float(price) > measure_price_p100:
         send_email.email(price, current_time)
-        dianna_email.email(price, current_time)
-        miranda_email.email(price, current_time)
         measure_price = price
     measure_price_m100 = float(measure_price) - 100
     if float(price) < measure_price_m100:
         send_email.email(price, current_time)
-        dianna_email.email(price, current_time)
-        miranda_email.email(price, current_time)
         measure_price = price
     sleep(5)

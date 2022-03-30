@@ -1,89 +1,71 @@
-//define mail composer library
-var MailComposer = require('mailcomposer').MailComposer;
-var axios = require('axios');
+const Web = require('websocket').w3cwebsocket;
+const ws = new Web('wss://ws-feed.exchange.coinbase.com');
+var firstPrice = 0;
+const recipients = 'austinhadley2004@gmail.com';
 
-//return the price of BTC from coinbase api to use in other functions using axios library
-function getBTCPrice() {
-    return axios.get('https://api.coinbase.com/v2/prices/BTC-USD/spot')
-        .then(function (response) {
-            return response.data.data.amount;
-        })
-        .catch(function (error) {
-            console.log(error);
-        });
+ws.onerror = function(e) {
+    console.log('Error: ' + e.data);
 }
 
-//get current time in month, day, year, hour, minute, second
-function getTime() {
-    var d = new Date();
-    var month = d.getMonth() + 1;
-    var day = d.getDate();
-    var year = d.getFullYear();
-    var hour = d.getHours();
-    var minute = d.getMinutes();
-    var second = d.getSeconds();
-    if (month.toString().length == 1) {
-        var month = '0' + month;
-    }
-    if (day.toString().length == 1) {
-        var day = '0' + day;
-    }
-    if (hour.toString().length == 1) {
-        var hour = '0' + hour;
-    }
-    if (minute.toString().length == 1) {
-        var minute = '0' + minute;
-    }
-    if (second.toString().length == 1) {
-        var second = '0' + second;
-    }
-    var dateTime = month + '/' + day + '/' + year + ' ' + hour + ':' + minute + ':' + second;
-    return dateTime;
+ws.onclose = function() {
+    console.log('Reconnecting...');
+    ws = new Web('wss://ws-feed.exchange.coinbase.com');
 }
 
-//send email to user through gmail smtp server
-function sendEmail() {
-    var email = 'austinhadley2004@gmail.com';
-    var subject = "Bitcoin Price Alert";
-    var body = "At: " + getTime() + " Bitcoin's price is :" + getBTCPrice();
-    var server = "smtp.gmail.com";
-    var port = 465;
-    var username = "ahadley1124@gmail.com";
-    var password = "wzkbhmjuzssnyihx";
-    var to = email;
-    var from = "ahadley1124@gmail.com";
-    var mail = new MailComposer();
-    mail.setMessageOption({
-        from: from,
-        to: to,
+ws.onopen = function() {
+    ws.send(JSON.stringify({
+        "type": "subscribe",
+        "product_ids": ["BTC-USD"],
+        "channels": ["ticker"]
+    }));
+}
+
+ws.onmessage = function(e) {
+    var data = JSON.parse(e.data);
+    if(firstPrice == 0) {
+        firstPrice = data.price;
+    }
+    else {
+        // when the price changes by more than .25%, change the firstPrice variable
+        checkPrice(data.price, .25, recipients);
+    }
+}
+
+// send an email to a list of recipients
+function sendEmail(recipients, subject, body) {
+    var nodemailer = require('nodemailer');
+    var transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: 'ahadley1124@gmail.com',
+            pass: 'wzkbhmjuzssnyihx'
+        }
+    });
+
+    var mailOptions = {
+        from: 'ahadley1124@gmail.com',
+        to: recipients,
         subject: subject,
-        body: body
-    });
-    mail.buildMessage(function(message) {
-        var data = {
-            message: message,
-            server: server,
-            port: port,
-            username: username,
-            password: password
-        };
-        mail.sendMail(data, function(error, response) {
-            if (error) {
-                console.log(error);
-            } else {
-                console.log(response);
-            }
-        });
+        text: body
+    };
+
+    transporter.sendMail(mailOptions, function(error, info){
+        if (error) {
+            console.log(error);
+        } else {
+            console.log('Email sent: ' + info.response);
+        }
     });
 }
 
-//log the date and price of bitcoin to the console
-function log() {
-    console.log(getTime() + " " + getBTCPrice());
+// send an email if the price changes by a certain percentage
+function checkPrice(price, percent, recipients) {
+    var change = (price - firstPrice) / firstPrice;
+    if(change > percent) {
+        sendEmail(recipients, 'Price Change', 'The price has changed by ' + change + '%');
+        firstPrice = price;
+    }
 }
 
-//send an email and log the date and price of bitcoin to the console every minute
-setInterval(function() {
-    sendEmail();
-    log();
-}, 60000);
+// start the websocket connection
+ws.onopen();
