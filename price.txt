@@ -1,0 +1,7 @@
+{"type":"subscriptions","channels":[{"name":"ticker","product_ids":["BTC-USD"]}]}
+{"type":"subscriptions","channels":[{"name":"ticker","product_ids":["BTC-USD"]}]}
+{"type":"subscriptions","channels":[{"name":"ticker","product_ids":["BTC-USD"]}]}
+{"type":"subscriptions","channels":[{"name":"ticker","product_ids":["BTC-USD"]}]}
+{"type":"subscriptions","channels":[{"name":"ticker","product_ids":["BTC-USD"]}]}
+{"type":"error","message":"Malformed JSON"}
+{"type":"error","message":"Malformed JSON"}
